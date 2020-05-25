@@ -12,8 +12,10 @@
 
 #define SW 5 //スイッチ
 #define SD_CS 4 //SDカードモジュールのCSピン
-const char* ssid = "AirPort52544";
-const char* password = "6218455563710";
+const char* ssid = "Xperia X Performance_c935";
+const char* password = "e044263b2508";
+//const char* ssid = "AirPort52544";
+//const char* password = "6218455563710";
 unsigned int channelId = 21558;
 const char* writeKey = "a84c722b67747fb1";
 
