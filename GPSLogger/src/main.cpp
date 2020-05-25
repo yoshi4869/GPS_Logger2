@@ -8,11 +8,15 @@
 #include "ssd1306_extend.h"//OLEDディスプレイ用
 #include "monospace_font.h"//OLEDディスプレイ用
 #include <WiFi.h>// PlatformIOのWiFi.hライブラリをインストールすると上手く行かなかった
+#include "Ambient.h"
 
 #define SW 5 //スイッチ
 #define SD_CS 4 //SDカードモジュールのCSピン
 const char* ssid = "AirPort52544";
 const char* password = "6218455563710";
+unsigned int channelId = 21558;
+const char* writeKey = "a84c722b67747fb1";
+
 /* GPS/OLEDディスプレイ用のグローバル変数の宣言 */
 TinyGPSPlus gps;
 SSD1306_EX display(0x3c, 21, 22);//(I2Cのアドレス，SDAのピン番号，SCLのピン番号)
@@ -21,6 +25,10 @@ int year, month, day, hour, minute, second, second_old;
 float lat, lng, alt, speed;
 boolean is_logging, is_valid;
 String fname;
+
+void sendInfo2Ambient();
+WiFiClient client;
+Ambient ambient;
 
 void setup() {
   // シリアルの初期化
@@ -35,7 +43,10 @@ void setup() {
   }
   Serial.print(" connected.");
   Serial.println(WiFi.localIP());
-
+  bool tf = ambient.begin(channelId, writeKey, &client);//  チャネルIDとライトキーを指定してAmbientの初期化
+  if (!tf){
+    Serial.println("ambient.begin failed.");
+  }
   // スイッチのピンを入力用にする
   Serial2.begin(9600);//GPS用
   pinMode(SW, INPUT_PULLUP);
@@ -61,6 +72,22 @@ void setup() {
   fname = "";
 }
 
+void sendInfo2Ambient(void)
+{
+  char buf[16];
+  if (gps.location.isValid()) {
+    dtostrf(gps.altitude.meters(), 4, 2, buf);//浮動小数点値,文字列の長さ,小数点以下の桁数,文字列バッファ
+    Serial.println(buf);
+    ambient.set(1, buf);// チャンネル1にセット
+    dtostrf(gps.location.lat(), 12, 8, buf);
+    Serial.println(buf);
+    ambient.set(9, buf);// チャンネル9にセット
+    dtostrf(gps.location.lng(), 12, 8, buf);
+    Serial.println(buf);
+    ambient.set(10, buf);// チャンネル10にセット
+    ambient.send();
+  }
+}
 
 void read_gps(void) {
   struct tm t, *rt;
@@ -98,6 +125,7 @@ void check_logging() {
   if (digitalRead(SW) == LOW) {
     // ONならログを取る
     is_logging = true;
+    sendInfo2Ambient();//Ambientにデータを送信する
   }
   else {
     // OFFならログは取らない
