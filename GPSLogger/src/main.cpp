@@ -7,10 +7,12 @@
 #include <Wire.h>//OLEDディスプレイ用
 #include "ssd1306_extend.h"//OLEDディスプレイ用
 #include "monospace_font.h"//OLEDディスプレイ用
-
+#include <WiFi.h>// PlatformIOのWiFi.hライブラリをインストールすると上手く行かなかった
 
 #define SW 5 //スイッチ
 #define SD_CS 4 //SDカードモジュールのCSピン
+const char* ssid = "AirPort52544";
+const char* password = "6218455563710";
 /* GPS/OLEDディスプレイ用のグローバル変数の宣言 */
 TinyGPSPlus gps;
 SSD1306_EX display(0x3c, 21, 22);//(I2Cのアドレス，SDAのピン番号，SCLのピン番号)
@@ -23,8 +25,19 @@ String fname;
 void setup() {
   // シリアルの初期化
   Serial.begin(115200);//シリアル通信用
-  Serial2.begin(9600);//GPS用
+  Serial.println("WiFi begin");
+  WiFi.begin(ssid, password);
+  Serial.print("WiFi connecting to: ");
+  Serial.print(ssid);
+  while(WiFi.status() != WL_CONNECTED){
+    Serial.print(".");
+    delay(100);
+  }
+  Serial.print(" connected.");
+  Serial.println(WiFi.localIP());
+
   // スイッチのピンを入力用にする
+  Serial2.begin(9600);//GPS用
   pinMode(SW, INPUT_PULLUP);
   // OLEDディスプレイの初期化
   display.init();
@@ -47,6 +60,7 @@ void setup() {
   is_logging = false;
   fname = "";
 }
+
 
 void read_gps(void) {
   struct tm t, *rt;
